@@ -68,5 +68,5 @@ root: {
         office: /home/zhao/data/DA/office31, 
         officehome:  /home/zhao/data/DA/office_home,
         visda: /home/zhao/data/DA/visda,
-        cs: /home/zhao/data/DA/cs
+        cs: /home/zhao/data/DA/CS
         }

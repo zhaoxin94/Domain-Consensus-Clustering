@@ -25,7 +25,7 @@ def main():
     cudnn.enabled = True
     cudnn.benchmark = True
 
-    config, writer = init_config("config/office.yml", sys.argv)
+    config, writer = init_config("config/office.yaml", sys.argv)
 
     Param = importlib.import_module('trainer.{}{}_trainer'.format(config.trainer, config.version))
     if config.setting=='uda':
