@@ -69,6 +69,9 @@ class BaseTrainer(object):
                                       test=True)
         self.best_prec = 0.0
         self.best_recall = 0.0
+        self.last_common_acc = 0.0
+        self.last_uk_acc = 0.0
+        self.last_os = 0.0
 
     def forward(self):
         pass
@@ -105,6 +108,19 @@ class BaseTrainer(object):
                     '[last]: ' + str(self.last) + ' ' + str(self.k_last) +
                     ' [H-Score]: ' + str(self.h_last) + ' ' +
                     str(self.last_prec) + ' ' + str(self.last_recall) + '\n')
+        f.close()
+
+    def save_txt_new(self):
+        '''zhaoxin add, to log os*, unk, hos, etc.'''
+        with open(osp.join(self.config.snapshot, 'result.txt'), 'a') as f:
+            f.write(self.config.source[:2] + '->' + self.config.target[:2] +
+                    '[best]: ' + str(self.best) + ' ' + str(self.k_best) +
+                    ' H-Score: ' + str(self.h_best) + '\n')
+            f.write(self.config.source[:2] + '->' + self.config.target[:2] +
+                    '[last]: ' + str(self.last) + ' ' + str(self.k_last) +
+                    ' H-Score: ' + str(self.h_last) + ' OS_star: ' +
+                    str(self.last_common_acc) + ' UNK: ' +
+                    str(self.last_uk_acc) + ' OS: ' + str(self.last_os) + '\n')
         f.close()
 
     def neptune_metric(self, name, value, display=True):
@@ -178,7 +194,7 @@ class BaseTrainer(object):
             result = self.open_validate(i_iter)
         else:
             result = self.close_validate(i_iter)
-        over_all, k, h_score, recall, precision = result
+        over_all, k, h_score, recall, precision, common_acc, uk_acc, os = result
 
         if over_all > self.best:
             self.best = over_all
@@ -195,6 +211,9 @@ class BaseTrainer(object):
             self.h_last = h_score
             self.last_recall = recall
             self.last_prec = precision
+            self.last_common_acc = common_acc
+            self.last_uk_acc = uk_acc
+            self.last_os = os
 
         return result
 
@@ -219,6 +238,7 @@ class BaseTrainer(object):
             with torch.no_grad():
                 _, neck, pred, pred2 = self.model(img.cuda())
 
+
 #           pred2 = pred2[:, common_index]
             pred_label = pred2.argmax(dim=-1)
             #            pred_label = common_index[pred_label]
@@ -242,6 +262,7 @@ class BaseTrainer(object):
         self.neptune_metric('val/Test Accuracy', acc)
         return acc, 0.0, 0.0, 0.0, 0.0
 
+    '''
     def open_validate(self, i_iter):
         # self.model.set_bn_domain(1)
         self.model.train(False)
@@ -332,7 +353,7 @@ class BaseTrainer(object):
                             accs.avg[uk_index])
         self.neptune_metric('memo-val/Known category accuracy[center]', k_acc)
         return acc, k_acc, h_score, bi_rec, bi_prec
-
+    '''
     def open_validate(self, i_iter):
         self.model.train(False)
         knows = 0.0
@@ -415,13 +436,14 @@ class BaseTrainer(object):
                 common_cnt += accs.count[k]
         common_acc = common_sum / common_cnt
         h_score = 2 * (common_acc * uk_acc) / (common_acc + uk_acc)
+        os = (common_sum + uk_acc) / (common_cnt + 1)
         self.neptune_metric('memo-val/H-score', h_score)
         self.model.train(True)
         self.neptune_metric('memo-val/Test Accuracy[center]', acc)
         self.neptune_metric('memo-val/UK classification accuracy[center]',
                             accs.avg[uk_index])
         self.neptune_metric('memo-val/Known category accuracy[center]', k_acc)
-        return acc, k_acc, h_score, bi_rec, bi_prec
+        return acc, k_acc, h_score, bi_rec, bi_prec, common_acc, uk_acc, os
 
     def get_src_centers(self):
 

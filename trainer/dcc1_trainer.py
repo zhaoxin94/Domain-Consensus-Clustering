@@ -114,7 +114,7 @@ class Trainer(BaseTrainer):
         self.optimize()
 
         # save the final results to a txt file 
-        self.save_txt()
+        self.save_txt_new()
 
     def re_clustering(self, i_iter):
         t_centers, plabel_dict, class_set = self.cluster_matching(i_iter)
