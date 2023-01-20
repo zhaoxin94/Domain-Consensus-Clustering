@@ -8,20 +8,24 @@ import numpy as np
 import random
 import platform
 
+
 def easy_dic(dic):
     dic = edict(dic)
     for key, value in dic.items():
         if isinstance(value, dict):
             dic[key] = edict(value)
     return dic
+
+
 def show_config(config, sub=False):
     msg = ''
     for key, value in config.items():
         if isinstance(value, dict):
             msg += show_config(value, sub=True)
-        else :
+        else:
             msg += '{:>25} : {:<15}\n'.format(key, value)
     return msg
+
 
 def type_align(source, target):
     if isinstance(source, int):
@@ -35,6 +39,7 @@ def type_align(source, target):
     else:
         print("Unsupported type: {}".format(type(source)))
 
+
 def config_parser(config, args):
     print(args)
     for arg in args:
@@ -42,17 +47,16 @@ def config_parser(config, args):
             continue
         else:
             key, value = arg.split('=')
-        value = type_align(config[key], value) 
+        value = type_align(config[key], value)
         config[key] = value
     return config
-
 
 
 def init_config(config_path, argvs):
     with open(config_path, 'r') as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
     f.close()
-    
+
     config = easy_dic(config)
     config = config_parser(config, argvs)
     config.snapshot = osp.join(config.snapshot, config.note)
@@ -65,11 +69,12 @@ def init_config(config_path, argvs):
     else:
         writer = None
     if config.fix_seed:
-        torch.manual_seed(1234)
-        torch.cuda.manual_seed(1234)
-        np.random.seed(1234)
-        random.seed(1234)
+        torch.manual_seed(config.seed)
+        torch.cuda.manual_seed(config.seed)
+        np.random.seed(config.seed)
+        random.seed(config.seed)
+        torch.backends.cudnn.benchmark = False
+        torch.backends.cudnn.detrministic = True
     message = show_config(config)
     print(message)
     return config, writer
-

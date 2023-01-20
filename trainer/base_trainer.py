@@ -112,15 +112,14 @@ class BaseTrainer(object):
 
     def save_txt_new(self):
         '''zhaoxin add, to log os*, unk, hos, etc.'''
-        with open(osp.join(self.config.snapshot, 'result.txt'), 'a') as f:
+        with open(
+                osp.join(self.config.snapshot, str(self.config.exp_name) + '.txt'),
+                'a') as f:
             f.write(self.config.source[:2] + '->' + self.config.target[:2] +
-                    '[best]: ' + str(self.best) + ' ' + str(self.k_best) +
-                    ' H-Score: ' + str(self.h_best) + '\n')
-            f.write(self.config.source[:2] + '->' + self.config.target[:2] +
-                    '[last]: ' + str(self.last) + ' ' + str(self.k_last) +
-                    ' H-Score: ' + str(self.h_last) + ' OS_star: ' +
+                    '[last]:' + ' OS: ' + str(self.last_os) + ' OS_star: ' +
                     str(self.last_common_acc) + ' UNK: ' +
-                    str(self.last_uk_acc) + ' OS: ' + str(self.last_os) + '\n')
+                    str(self.last_uk_acc) + ' H-Score: ' + str(self.h_last) +
+                    '\n')
         f.close()
 
     def neptune_metric(self, name, value, display=True):
@@ -435,8 +434,10 @@ class BaseTrainer(object):
                 common_sum += v
                 common_cnt += accs.count[k]
         common_acc = common_sum / common_cnt
+        # print(f'----common_cnt: {common_cnt}')
         h_score = 2 * (common_acc * uk_acc) / (common_acc + uk_acc)
-        os = (common_sum + uk_acc) / (common_cnt + 1)
+        os = (common_acc * self.config.cls_share +
+              uk_acc) / (self.config.cls_share + 1)
         self.neptune_metric('memo-val/H-score', h_score)
         self.model.train(True)
         self.neptune_metric('memo-val/Test Accuracy[center]', acc)
